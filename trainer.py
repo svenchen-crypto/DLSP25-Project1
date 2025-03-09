@@ -1,70 +1,66 @@
 import torch
+import optuna
 
-def train_model(model, train_loader, criterion, optimizer, valid_loader=None,
-                num_epochs=10, device='cuda', scheduler=None, log_interval=100):
+def train_model(trial, model, train_loader, criterion, optimizer, 
+                valid_loader=None, num_epochs=10, device='cpu', log_interval=100):
     """
-    Train a PyTorch model with flexible parameters.
+    Train model with flexible parameters.
     """
+
+    best_val_accuracy = 0  # Track the best validation accuracy
     
-    # Move model to the appropriate device
-    model = model.to(device)
-
+    # Training and validation loop
     for epoch in range(num_epochs):
+        # Training phase
         model.train()
         running_loss = 0.0
 
-        for batch_idx, (inputs, targets) in enumerate(train_loader):
-            inputs, targets = inputs.to(device), targets.to(device)
-            
-            # Forward pass
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-
-            # Backward pass and optimization
+        for i, (inputs, labels) in enumerate(train_loader):
+            inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
-            
-            # Log progress
-            if (batch_idx + 1) % log_interval == 0:
-                print(f"Epoch [{epoch + 1}/{num_epochs}], "
-                      f"Step [{batch_idx + 1}/{len(train_loader)}], "
-                      f"Loss: {running_loss / log_interval:.4f}")
-                running_loss = 0.0
+            if (i + 1) % log_interval == 0:  # Print every log_interval batches
+                print(f"  Epoch [{epoch + 1}/{num_epochs}], Batch [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
-        # Validation step (if validation loader is provided)
-        if valid_loader is not None:
-            valid_loss, valid_acc = evaluate_model(model, valid_loader, criterion, device)
-            print(f"Validation Loss: {valid_loss:.4f}, Validation Accuracy: {valid_acc:.2f}%")
+        # Validation phase
+        val_accuracy = evaluate_model(model, valid_loader, device)
+        best_val_accuracy = max(best_val_accuracy, val_accuracy)  # Track best accuracy
+        print(f"  Validation Accuracy after Epoch {epoch + 1}: {val_accuracy:.4f}")
+
+        # Report intermediate result to Optuna
+        trial.report(val_accuracy, epoch)
+
+        # Handle pruning (optional)
+        if trial.should_prune():
+            print("  Trial pruned due to no improvement.")
+            raise optuna.exceptions.TrialPruned()
         
-        # Step the scheduler if provided
-        if scheduler is not None:
-            scheduler.step()
+    # Print summary for the trial
+    print(f"Trial {trial.number} complete. Best Validation Accuracy: {best_val_accuracy:.4f}\n")
 
-    print("Training complete!")
+    # Return the best validation accuracy across all epochs
+    return best_val_accuracy
 
 
-def evaluate_model(model, data_loader, criterion, device='cuda'):
-    """Evaluate model performance on a dataset."""
+def evaluate_model(model, valid_loader, device='cpu'):
+    """Evaluate model performance"""
     model.eval()
-    total_loss = 0.0
     correct = 0
     total = 0
 
     with torch.no_grad():
-        for inputs, targets in data_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
+        for inputs, labels in valid_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            total_loss += loss.item()
-
-            # Calculate accuracy
             _, predicted = torch.max(outputs, 1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-    avg_loss = total_loss / len(data_loader)
-    accuracy = 100 * correct / total
-    return avg_loss, accuracy
+    # Calculate validation accuracy
+    val_accuracy = correct / total
+    return val_accuracy
