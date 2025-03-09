@@ -6,3 +6,4 @@ cifar_test_nolabel.pkl
 .ipynb_checkpoints/
 .venv/
 submission.csv
+checkpoints*
