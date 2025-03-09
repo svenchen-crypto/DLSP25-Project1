@@ -24,7 +24,7 @@ def download_kaggle_dataset(
     print("Successfully downloaded dataset from Kaggle")
 
 def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2, 
-                         valid_size=0.1, subset_percent=1.0, random_seed=42):
+                         valid_size=0.1, subset_percent=1.0, random_seed=42, verbos=False):
     
     # Check if the data directory exists
     if not os.path.exists(cifar10_dir):
@@ -56,12 +56,13 @@ def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2,
     train_loader = DataLoader(train_subset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
     valid_loader = DataLoader(valid_subset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
-    image, label = train_subset[0]
-    print(f"Image shape: {image.shape}")
-    print(f"Label: {label}")
-    print(f"Number of training data: {len(train_subset)}")
-    print(f"Number of validation data: {len(valid_subset)}")
-
+    if verbos:
+        image, label = train_subset[0]
+        print(f"Image shape: {image.shape}")
+        print(f"Label: {label}")
+        print(f"Number of training data: {len(train_subset)}")
+        print(f"Number of validation data: {len(valid_subset)}")
+        
     return train_loader, valid_loader
 
 def load_cifar_batch(file):
