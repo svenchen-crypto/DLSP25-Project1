@@ -5,5 +5,5 @@ cifar-10-python/
 cifar_test_nolabel.pkl
 .ipynb_checkpoints/
 .venv/
-submission.csv
+submission*.csv
 checkpoints*
