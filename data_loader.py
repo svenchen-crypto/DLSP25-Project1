@@ -33,7 +33,7 @@ def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2,
 
     # Set the random seed for reproducibility
     torch.manual_seed(random_seed)
-
+    
     train_dataset = datasets.CIFAR10(root=cifar10_dir, train=True, download=False, transform=transform_train)
     
     subset_size = int(subset_percent * len(train_dataset))
@@ -62,8 +62,26 @@ def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2,
         print(f"Label: {label}")
         print(f"Number of training data: {len(train_subset)}")
         print(f"Number of validation data: {len(valid_subset)}")
-        
+
     return train_loader, valid_loader
+
+def get_test_dataloader(batch_size=64, num_workers=4, verbos=False):
+    # Check if the data directory exists
+    if not os.path.exists(cifar10_dir):
+        print(f"Dataset directory '{cifar10_dir}' not found. Downloading from Kaggle")
+        download_kaggle_dataset()
+    
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
+    ])
+
+    test_dataset = datasets.CIFAR10(root=cifar10_dir, train=False, download=False, transform=test_transform)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+
+    if verbos:
+        print(f"Number of test data: {len(test_dataset)}")
+    return test_loader
 
 def load_cifar_batch(file):
     with open(file, 'rb') as fo:
@@ -71,7 +89,7 @@ def load_cifar_batch(file):
     return batch
 
 
-def get_test_dataloader(cifar_test_path='cifar_test_nolabel.pkl', batch_size=128):
+def get_kaggle_test_dataloader(cifar_test_path='cifar_test_nolabel.pkl', batch_size=128):
     # Check if the data directory exists
     if not os.path.exists(cifar_test_path):
         print(f"test dataset file '{cifar_test_path}' not found. Downloading from Kaggle")

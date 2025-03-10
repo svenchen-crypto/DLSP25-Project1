@@ -1,8 +1,11 @@
 import torch
 import optuna
+from torch.optim import lr_scheduler
 
 def train_model(trial, model, train_loader, criterion, optimizer, 
-                valid_loader=None, num_epochs=10, device='cpu', log_interval=100):
+                valid_loader=None, num_epochs=10, device='cpu', log_interval=10,
+                scheduler=None
+               ):
     """
     Train model with flexible parameters.
     """
@@ -25,8 +28,13 @@ def train_model(trial, model, train_loader, criterion, optimizer,
 
             running_loss += loss.item()
             if (i + 1) % log_interval == 0:  # Print every log_interval batches
-                print(f"  Epoch [{epoch + 1}/{num_epochs}], Batch [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+                print(f"\r  Epoch [{epoch + 1}/{num_epochs}], Batch [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}", end="")
 
+            # Step the scheduler after every epoch if it's not ReduceLROnPlateau
+            if scheduler and scheduler.__class__ != lr_scheduler.ReduceLROnPlateau:
+                scheduler.step()
+                
+        print()
         # Validation phase
         val_accuracy = evaluate_model(model, valid_loader, device)
         best_val_accuracy = max(best_val_accuracy, val_accuracy)  # Track best accuracy
@@ -39,6 +47,10 @@ def train_model(trial, model, train_loader, criterion, optimizer,
         if trial.should_prune():
             print("  Trial pruned due to no improvement.")
             raise optuna.exceptions.TrialPruned()
+            
+        # Step scheduler for ReduceLROnPlateau based on validation loss
+        if scheduler and scheduler.__class__ == lr_scheduler.ReduceLROnPlateau:
+            scheduler.step(running_loss)
         
     # Print summary for the trial
     print(f"Trial {trial.number} complete. Best Validation Accuracy: {best_val_accuracy:.4f}\n")
@@ -47,20 +59,20 @@ def train_model(trial, model, train_loader, criterion, optimizer,
     return best_val_accuracy
 
 
-def evaluate_model(model, valid_loader, device='cpu'):
+def evaluate_model(model, data_loader, device='cpu'):
     """Evaluate model performance"""
     model.eval()
     correct = 0
     total = 0
 
     with torch.no_grad():
-        for inputs, labels in valid_loader:
+        for inputs, labels in data_loader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    # Calculate validation accuracy
-    val_accuracy = correct / total
-    return val_accuracy
+    # Calculate accuracy
+    accuracy = float(correct) / float(total)
+    return accuracy
