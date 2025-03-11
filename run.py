@@ -13,7 +13,8 @@ def single_run(
     optimizer_type="SGD",
     optimizer_params={"lr": 0.01},
     scheduler_type=None,
-    scheduler_params=None
+    scheduler_params=None,
+    criterion_params={}
 ):
     train_loader, valid_loader = get_cifar10_dataloaders(
         transform,
@@ -29,7 +30,7 @@ def single_run(
 
     optimizer = optimizer_map[optimizer_type](model.parameters(), **optimizer_params)
     scheduler = scheduler_map[scheduler_type](optimizer, **scheduler_params)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(**criterion_params)
 
     # Training
     best_val_accuracy = train_model(

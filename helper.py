@@ -3,13 +3,13 @@ import json
 import os
 
 optimizer_map = {
-    "Adam": optim.AdamW,
+    "Adam": optim.Adam,
+    "AdamW": optim.AdamW,
     "SGD": optim.SGD,
     "RMSprop": optim.RMSprop
 }
 
 scheduler_map = {
-    "StepLR": optim.lr_scheduler.StepLR,
     "CosineAnnealingLR": optim.lr_scheduler.CosineAnnealingLR,
     "ReduceLROnPlateau": optim.lr_scheduler.ReduceLROnPlateau,
     "OneCycleLR": optim.lr_scheduler.OneCycleLR,
