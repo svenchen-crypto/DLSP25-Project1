@@ -6,4 +6,6 @@ submission.csv
 checkpoints/
 studies/
 datasets/
+plots/
 study.db
+.nfs*

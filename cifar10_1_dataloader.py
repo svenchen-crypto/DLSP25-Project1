@@ -24,10 +24,9 @@ class CIFAR101Dataset(Dataset):
 
         return image, torch.tensor(label, dtype=torch.long)
 
-def get_dataloader_10_1(num_samples=1000, seed=None):
-    # 🔥 **Use dynamic seed if None**
+def get_dataloader_10_1(num_samples=1000, batch_size=64, seed=None):
     if seed is None:
-        seed = int(time.time())  # Different seed every time
+        seed = int(time.time()) # Different seed every time
 
     torch.manual_seed(seed)
     random.seed(seed)
@@ -40,30 +39,21 @@ def get_dataloader_10_1(num_samples=1000, seed=None):
     ])
 
     # File paths
-    image_path = "cifar10.1_v6_data.npy"
-    label_path = "cifar10.1_v6_labels.npy"
+    image_path = "datasets/cifar10_1/cifar10.1_v6_data.npy"
+    label_path = "datasets/cifar10_1/cifar10.1_v6_labels.npy"
 
-    # 🔥 **Ensure dataset is freshly loaded every time**
     images = np.load(image_path, allow_pickle=True).copy()  # Force fresh load
     labels = np.load(label_path, allow_pickle=True).copy()
-
-    # 🔥 **Fully shuffle dataset before selecting subset**
+    
     indices = np.arange(len(images))
-    np.random.shuffle(indices)  # Ensures a different subset each time
-
-    # Take a random subset of `num_samples` images
+    np.random.shuffle(indices)
+    
     subset_size = min(num_samples, len(images))
     selected_indices = indices[:subset_size]
-
-    # 🔥 **Create a NEW dataset from the selected images**
     selected_images = images[selected_indices]
     selected_labels = labels[selected_indices]
 
-    # Create dataset with only the subset
     subset_dataset = CIFAR101Dataset(selected_images, selected_labels, transform=transform)
-
-    # Create DataLoader with shuffle enabled
-    batch_size = 64  # You can adjust this as needed
     data_loader = DataLoader(subset_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 
     return data_loader

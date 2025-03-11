@@ -20,7 +20,7 @@ def single_run(
         subset_percent=1, 
         valid_size=0.1,
         batch_size=batch_size,
-        num_workers=4,
+        num_workers=8,
         use_kaggle=False
     )
 
@@ -29,7 +29,7 @@ def single_run(
 
     optimizer = optimizer_map[optimizer_type](model.parameters(), **optimizer_params)
     scheduler = scheduler_map[scheduler_type](optimizer, **scheduler_params)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     # Training
     best_val_accuracy = train_model(
