@@ -1,9 +1,9 @@
 __pycache__
 
-deep-learning-spring-2025-project-1.zip
-cifar-10-python/
-cifar_test_nolabel.pkl
 .ipynb_checkpoints/
 .venv/
-submission*.csv
-checkpoints*
+submission.csv
+checkpoints/
+studies/
+datasets/
+study.db

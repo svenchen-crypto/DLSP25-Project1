@@ -8,33 +8,52 @@ import os
 
 
 # Specify the directory containing CIFAR-10 batches
-cifar10_dir = "cifar-10-python"
-competition_name = "deep-learning-spring-2025-project-1"
+cifar10_dir = "datasets/cifar-10-python"
+lib_data_dir = "datasets/data"
 
 def download_kaggle_dataset(
-    competition_name=competition_name,
+    competition_name="deep-learning-spring-2025-project-1",
     fn="deep-learning-spring-2025-project-1.zip"
 ):
+    if os.path.exists(cifar10_dir):
+        return 
+        
+    print(f"Dataset directory '{cifar10_dir}' not found. Downloading from Kaggle")
+        
     # Download dataset from kaggle
     kaggle.api.competition_download_cli(competition_name)
     with zipfile.ZipFile(fn, 'r') as zip_ref:
         # Extract all contents to a directory
-        zip_ref.extractall('.')
-
+        zip_ref.extractall('datasets/')
+    os.remove(fn)
     print("Successfully downloaded dataset from Kaggle")
 
-def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2, 
-                         valid_size=0.1, subset_percent=1.0, random_seed=42, verbos=False):
-    
-    # Check if the data directory exists
-    if not os.path.exists(cifar10_dir):
-        print(f"Dataset directory '{cifar10_dir}' not found. Downloading from Kaggle")
-        download_kaggle_dataset()
+def check_kaggle():
+    if use_kaggle:
+        # Check if the data directory exists
+        if not os.path.exists(cifar10_dir):
+            print(f"Dataset directory '{cifar10_dir}' not found. Downloading from Kaggle")
+            download_kaggle_dataset()
 
+        data_dir = cifar10_dir
+    else:
+        data_dir = "lib_data/"
+
+
+def get_cifar10_dataloaders(
+    transform_train, batch_size=64, num_workers=4, valid_size=0.1, 
+    subset_percent=1.0, random_seed=42,  use_kaggle=True, verbos=False
+):
     # Set the random seed for reproducibility
     torch.manual_seed(random_seed)
     
-    train_dataset = datasets.CIFAR10(root=cifar10_dir, train=True, download=False, transform=transform_train)
+    if use_kaggle:
+        download_kaggle_dataset()
+        data_dir = cifar10_dir
+    else:
+        data_dir = lib_data_dir
+    
+    train_dataset = datasets.CIFAR10(root=data_dir, train=True, download=not use_kaggle, transform=transform_train)
     
     subset_size = int(subset_percent * len(train_dataset))
     
@@ -65,48 +84,45 @@ def get_cifar10_dataloaders(transform_train, batch_size=128, num_workers=2,
 
     return train_loader, valid_loader
 
-def get_test_dataloader(batch_size=64, num_workers=4, verbos=False):
-    # Check if the data directory exists
-    if not os.path.exists(cifar10_dir):
-        print(f"Dataset directory '{cifar10_dir}' not found. Downloading from Kaggle")
+
+def get_test_dataloader(
+    batch_size=64, num_workers=4, use_kaggle=True, verbos=False
+):
+    if use_kaggle:
         download_kaggle_dataset()
+        data_dir = cifar10_dir
+    else:
+        data_dir = lib_data_dir  
     
     test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
     ])
 
-    test_dataset = datasets.CIFAR10(root=cifar10_dir, train=False, download=False, transform=test_transform)
+    test_dataset = datasets.CIFAR10(root=data_dir, train=False, download=not use_kaggle, transform=test_transform)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
     if verbos:
         print(f"Number of test data: {len(test_dataset)}")
     return test_loader
 
+
 def load_cifar_batch(file):
     with open(file, 'rb') as fo:
         batch = pickle.load(fo, encoding='bytes')
     return batch
+    
 
-
-def get_kaggle_test_dataloader(cifar_test_path='cifar_test_nolabel.pkl', batch_size=128):
-    # Check if the data directory exists
-    if not os.path.exists(cifar_test_path):
-        print(f"test dataset file '{cifar_test_path}' not found. Downloading from Kaggle")
-        download_kaggle_dataset()
-
-    # Load the batch
-    cifar10_batch = load_cifar_batch('cifar_test_nolabel.pkl')
-
-    # Extract images 
+def get_kaggle_test_dataloader(
+    cifar_test_path='cifar_test_nolabel.pkl', batch_size=64
+):
+    download_kaggle_dataset()
+    cifar10_batch = load_cifar_batch('cifar_test_nolabel.pkl') # Load the batch
     test_images = cifar10_batch[b'data']
-    # Convert numpy array to PyTorch tensor
     test_images = torch.tensor(test_images, dtype=torch.float32)  # Convert to float32 for normalization
 
-    # Transform the images from [N, W, H, C] to [N, C, W, H] 
+    # Transform the images from [N, W, H, C] to [N, C, W, H] and normalize the images 
     test_images = test_images.permute(0, 3, 1, 2) / 255.0
-
-    # Normalize the images
     normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     test_images = normalize(test_images)
 

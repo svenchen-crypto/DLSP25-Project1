@@ -1,19 +1,22 @@
 import torch
 import optuna
 from torch.optim import lr_scheduler
+from helper import num_params
+from datetime import datetime
 
-def train_model(trial, model, train_loader, criterion, optimizer,
-                valid_loader=None, num_epochs=10, device='cpu', log_interval=10,
-                scheduler=None
-               ):
+def train_model(
+    model, train_loader, criterion, optimizer, valid_loader=None, num_epochs=10, 
+    device='cpu', log_interval=10, scheduler=None, trial=None, chkpt_fp=None
+):
     """
     Train model with flexible parameters.
     """
-    best_val_accuracy = 0  # Track the best validation accuracy
+    if num_params(model) > 5_000_000:
+        raise Exception("Model size greater than 5M parameters")
+        
+    best_val_accuracy = 0 
     
-    # Training and validation loop
     for epoch in range(num_epochs):
-        # Training phase
         model.train()
         correct_train = 0
         total_train = 0
@@ -27,7 +30,7 @@ def train_model(trial, model, train_loader, criterion, optimizer,
             loss.backward()
             optimizer.step()
 
-            _, predicted = outputs.max(1)  # Get class index with highest probability
+            _, predicted = outputs.max(1)
             correct_train += (predicted == labels).sum().item()
             total_train += labels.size(0)
             train_acc = float(correct_train) / float(total_train)
@@ -46,20 +49,29 @@ def train_model(trial, model, train_loader, criterion, optimizer,
         best_val_accuracy = max(best_val_accuracy, val_accuracy)  # Track best accuracy
         print(f"  Validation Accuracy after Epoch {epoch + 1}: {val_accuracy:.4f}")
 
-        # Report intermediate result to Optuna
-        trial.report(val_accuracy, epoch)
+        if trial:
+            # Report intermediate result to Optuna
+            trial.report(val_accuracy, epoch)
 
-        # Handle pruning (optional)
-        if trial.should_prune():
-            print("  Trial pruned due to no improvement.")
-            raise optuna.exceptions.TrialPruned()
+            # Handle pruning (optional)
+            if trial.should_prune():
+                print("  Trial pruned due to no improvement.")
+                raise optuna.exceptions.TrialPruned()
             
         # Step scheduler for ReduceLROnPlateau based on validation loss
         if scheduler and scheduler.__class__ == lr_scheduler.ReduceLROnPlateau:
             scheduler.step(running_loss)
 
-    # Print summary for the trial
-    print(f"Trial {trial.number} complete. Best Validation Accuracy: {best_val_accuracy:.4f}\n")
+    if trial:
+        print(f"Trial {trial.number} complete. ", end="")
+    print(f"Best Validation Accuracy: {best_val_accuracy:.4f}\n")
+
+    # save model
+    if not chkpt_fp:
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        chkpt_fp = f"checkpoints/{model.__class__}_{best_val_accuracy:.4f}_{ts}.pth"
+        
+    torch.save(model.state_dict(), chkpt_fp)
 
     # Return the best validation accuracy across all epochs
     return best_val_accuracy
