@@ -81,14 +81,14 @@ def train_model(
     ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     training_id = f"{model.__class__.__name__}_{best_val_accuracy:.4f}_{ts}"
 
-    chkpt_filename = f"val_acc_{training_id}.pth"
+    chkpt_file = f"val_acc_{training_id}.pth"
     plot_loss_file = f"loss_{training_id}.png"
     plot_acc_file = f"acc_{training_id}.png"
 
     if trial:
-        chkpt_file = f"trial_{trial.number}_{chkpt_filename}"
+        chkpt_file = f"trial_{trial.number}_{chkpt_file}"
         plot_loss_file = f"trail_{trial.number}_{plot_loss_file}"
-        plot_acc_file = f"trail_{trial.number}_{plot_loss_file}"
+        plot_acc_file = f"trail_{trial.number}_{plot_acc_file}"
         
     plot_loss_file = os.path.join(plot_dir, plot_loss_file)
     plot_acc_file = os.path.join(plot_dir, plot_acc_file)
@@ -143,6 +143,6 @@ def evaluate_model(model, data_loader, device='cpu', criterion=None):
                 loss += criterion(outputs, labels).item()
 
     # Calculate accuracy
-    accuracy = 100.0 * float(correct) / float(total)
+    accuracy = 100. * float(correct) / float(total)
     return accuracy, loss
 

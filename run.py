@@ -29,7 +29,7 @@ def single_run(
 
     optimizer = optimizer_map[optimizer_type](model.parameters(), **optimizer_params)
     scheduler = scheduler_map[scheduler_type](optimizer, **scheduler_params)
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    criterion = nn.CrossEntropyLoss()
 
     # Training
     best_val_accuracy = train_model(

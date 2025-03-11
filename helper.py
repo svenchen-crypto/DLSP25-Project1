@@ -12,7 +12,8 @@ scheduler_map = {
     "StepLR": optim.lr_scheduler.StepLR,
     "CosineAnnealingLR": optim.lr_scheduler.CosineAnnealingLR,
     "ReduceLROnPlateau": optim.lr_scheduler.ReduceLROnPlateau,
-    "OneCycleLR": optim.lr_scheduler.OneCycleLR
+    "OneCycleLR": optim.lr_scheduler.OneCycleLR,
+    "CyclicLR": optim.lr_scheduler.CyclicLR
 }
 
 def update_study_details(checkpoint_dir, trial_num, trial_details):
