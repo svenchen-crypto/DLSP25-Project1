@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import os
 
 from data_loader import get_cifar10_dataloaders
 from trainer import train_model
@@ -31,6 +32,9 @@ def single_run(
     optimizer = optimizer_map[optimizer_type](model.parameters(), **optimizer_params)
     scheduler = scheduler_map[scheduler_type](optimizer, **scheduler_params)
     criterion = nn.CrossEntropyLoss(**criterion_params)
+
+    os.makedirs("checkpoints", exist_ok=True)
+    os.makedirs("plots", exist_ok=True)
 
     # Training
     best_val_accuracy = train_model(

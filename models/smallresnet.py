@@ -94,3 +94,6 @@ class SmallResNet(nn.Module):
 
 def SmallResNet0():
     return SmallResNet(base_channels=24, num_blocks=[3, 4, 6, 3])
+
+def SmallResNet1():
+    return SmallResNet(base_channels=28, num_blocks=[3, 4, 6, 3])

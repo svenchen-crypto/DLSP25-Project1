@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 
 from helper import num_params
+from cifar10_1_dataloader import get_dataloader_10_1
 
 def train_model(
     model, train_loader, criterion, optimizer, valid_loader=None, num_epochs=10, 
@@ -59,6 +60,11 @@ def train_model(
         
         best_val_accuracy = max(best_val_accuracy, val_acc)  # Track best accuracy
         print(f"  Validation Accuracy after Epoch {epoch + 1}: {val_acc:.4f}")
+        
+        # Test on cifar10.1, good indicator of kaggle performance
+        dataloader_10_1 = get_dataloader_10_1(num_samples=2000)
+        cifar10_1_acc, _ = evaluate_model(model, dataloader_10_1, device)
+        print(f"  Cidar10.1 Accuracy: {cifar10_1_acc}")
 
         if trial:
             # Report intermediate result to Optuna
@@ -72,6 +78,8 @@ def train_model(
         # Step scheduler for ReduceLROnPlateau based on validation loss
         if scheduler and scheduler.__class__ == lr_scheduler.ReduceLROnPlateau:
             scheduler.step(val_loss)
+
+
 
     if trial:
         print(f"Trial {trial.number} complete. ", end="")
@@ -118,9 +126,9 @@ def train_model(
     plt.legend()
     plt.savefig(plot_acc_file)  # Save the plot
     plt.close()
-
+    
     # Return the best validation accuracy across all epochs
-    return best_val_accuracy, 
+    return best_val_accuracy
 
 
 def evaluate_model(model, data_loader, device='cpu', criterion=None):

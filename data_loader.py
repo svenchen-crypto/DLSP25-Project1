@@ -86,18 +86,25 @@ def get_cifar10_dataloaders(
 
 
 def get_test_dataloader(
-    batch_size=64, num_workers=4, use_kaggle=True, verbos=False
+    batch_size=64, num_workers=4, grayscale=False, use_kaggle=True, verbos=False
 ):
     if use_kaggle:
         download_kaggle_dataset()
         data_dir = cifar10_dir
     else:
         data_dir = lib_data_dir  
-    
-    test_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
-    ])
+
+    if grayscale:
+        test_transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=3),  # Convert to grayscale but keep 3 channels
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
+        ])
+    else:
+        test_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
+        ])
 
     test_dataset = datasets.CIFAR10(root=data_dir, train=False, download=not use_kaggle, transform=test_transform)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
@@ -114,10 +121,10 @@ def load_cifar_batch(file):
     
 
 def get_kaggle_test_dataloader(
-    cifar_test_path='cifar_test_nolabel.pkl', batch_size=64
+    cifar_test_path='datasets/cifar_test_nolabel.pkl', batch_size=64
 ):
     download_kaggle_dataset()
-    cifar10_batch = load_cifar_batch('cifar_test_nolabel.pkl') # Load the batch
+    cifar10_batch = load_cifar_batch(cifar_test_path) # Load the batch
     test_images = cifar10_batch[b'data']
     test_images = torch.tensor(test_images, dtype=torch.float32)  # Convert to float32 for normalization
 
