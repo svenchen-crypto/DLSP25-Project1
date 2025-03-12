@@ -2,6 +2,12 @@ import torch.optim as optim
 import json
 import os
 
+cifar_10_mean_std = {
+    "mean": [0.491400808095932, 0.48215898871421814, 0.44653093814849854], 
+    "std": [0.24703224003314972, 0.24348513782024384, 0.26158785820007324]
+}
+
+
 optimizer_map = {
     "Adam": optim.Adam,
     "AdamW": optim.AdamW,

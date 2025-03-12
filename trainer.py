@@ -52,33 +52,34 @@ def train_model(
         print()
         history["train_acc"].append(train_acc)
         history["train_loss"].append(train_loss / len(train_loader))
+
+        if valid_loader:
+            # Validation phase
+            val_acc, val_loss = evaluate_model(model, valid_loader, criterion=criterion, device=device)
+            history["val_loss"].append(val_loss / len(valid_loader))
+            history["val_acc"].append(val_acc)
+            
+            best_val_accuracy = max(best_val_accuracy, val_acc)  # Track best accuracy
+            print(f"  Validation Accuracy after Epoch {epoch + 1}: {val_acc:.4f}")
         
-        # Validation phase
-        val_acc, val_loss = evaluate_model(model, valid_loader, criterion=criterion, device=device)
-        history["val_loss"].append(val_loss / len(valid_loader))
-        history["val_acc"].append(val_acc)
-        
-        best_val_accuracy = max(best_val_accuracy, val_acc)  # Track best accuracy
-        print(f"  Validation Accuracy after Epoch {epoch + 1}: {val_acc:.4f}")
-        
-        # Test on cifar10.1, good indicator of kaggle performance
-        dataloader_10_1 = get_dataloader_10_1(num_samples=2000)
-        cifar10_1_acc, _ = evaluate_model(model, dataloader_10_1, device)
-        print(f"  Cidar10.1 Accuracy: {cifar10_1_acc}")
+            if trial:
+                # Report intermediate result to Optuna
+                trial.report(val_acc, epoch)
+
+            # Step scheduler for ReduceLROnPlateau based on validation loss
+            if scheduler and scheduler.__class__ == lr_scheduler.ReduceLROnPlateau:
+                scheduler.step(val_loss)
 
         if trial:
-            # Report intermediate result to Optuna
-            trial.report(val_acc, epoch)
-
             # Handle pruning (optional)
             if trial.should_prune():
                 print("  Trial pruned due to no improvement.")
                 raise optuna.exceptions.TrialPruned()
-            
-        # Step scheduler for ReduceLROnPlateau based on validation loss
-        if scheduler and scheduler.__class__ == lr_scheduler.ReduceLROnPlateau:
-            scheduler.step(val_loss)
 
+        # Test on cifar10.1, good indicator of kaggle performance
+        dataloader_10_1 = get_dataloader_10_1(num_samples=2000)
+        cifar10_1_acc, _ = evaluate_model(model, dataloader_10_1, device)
+        print(f"  Cidar10.1 Accuracy: {cifar10_1_acc}")
 
 
     if trial:

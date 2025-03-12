@@ -23,7 +23,7 @@ def single_run(
         valid_size=0.1,
         batch_size=batch_size,
         num_workers=8,
-        use_kaggle=False
+        use_kaggle=True
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

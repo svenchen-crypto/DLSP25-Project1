@@ -6,6 +6,8 @@ import zipfile
 import pickle
 import os
 
+from helper import cifar_10_mean_std
+
 
 # Specify the directory containing CIFAR-10 batches
 cifar10_dir = "datasets/cifar-10-python"
@@ -98,12 +100,12 @@ def get_test_dataloader(
         test_transform = transforms.Compose([
             transforms.Grayscale(num_output_channels=3),  # Convert to grayscale but keep 3 channels
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
+            transforms.Normalize(**cifar_10_mean_std)  # Normalize with mean and std of CIFAR-10
         ])
     else:
         test_transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))  # Normalize with mean and std of CIFAR-10
+            transforms.Normalize(**cifar_10_mean_std)  # Normalize with mean and std of CIFAR-10
         ])
 
     test_dataset = datasets.CIFAR10(root=data_dir, train=False, download=not use_kaggle, transform=test_transform)
@@ -130,7 +132,7 @@ def get_kaggle_test_dataloader(
 
     # Transform the images from [N, W, H, C] to [N, C, W, H] and normalize the images 
     test_images = test_images.permute(0, 3, 1, 2) / 255.0
-    normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    normalize = transforms.Normalize(**cifar_10_mean_std)
     test_images = normalize(test_images)
 
     # Create a TensorDataset and DataLoader (without labels)
