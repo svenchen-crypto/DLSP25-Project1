@@ -1,0 +1,11 @@
+__pycache__
+
+.ipynb_checkpoints/
+.venv/
+submission.csv
+checkpoints/
+studies/
+datasets/
+plots/
+study.db
+.nfs*
